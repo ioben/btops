@@ -1,9 +1,11 @@
 package ipc
 
 import (
+	"log"
 	"bufio"
 	"bytes"
 	"io/ioutil"
+	"time"
 	"net"
 	"os"
 )
@@ -45,11 +47,13 @@ func newConn() (*net.UnixConn, error) {
 	if len(socketPath) == 0 {
 		socketPath = defaultBspwmSocket
 	}
-	raddr, err := net.ResolveUnixAddr("unix", socketPath)
-	if err != nil {
-		return nil, err
-	}
-	return net.DialUnix(raddr.Network(), nil, raddr)
+	return retry(10, 2*time.Second, func() (*net.UnixConn, error) {
+		raddr, err := net.ResolveUnixAddr("unix", socketPath)
+		if err != nil {
+			return nil, err
+		}
+		return net.DialUnix(raddr.Network(), nil, raddr)
+	})
 }
 
 func buildPayload(cmd ...string) []byte {
@@ -76,4 +80,27 @@ func Send(cmd ...string) (response []byte, err error) {
 	}
 
 	return ioutil.ReadAll(conn)
+}
+
+func retry(attempts int, sleep time.Duration, f func() (*net.UnixConn, error)) (*net.UnixConn, error) {
+    var raddr *net.UnixConn
+    var err error
+    for i := 0; ; i++ {
+	raddr, err = f()
+        if err == nil {
+            return raddr, nil
+        }
+
+        if i >= (attempts - 1) {
+            break
+        }
+
+        log.Println("Failed to open BSPWM_SOCKET:", err)
+
+        time.Sleep(sleep)
+    }
+
+    log.Println("Unable to open BSPWM_SOCKET after", attempts, "attempts, giving up")
+
+    return nil, err
 }
