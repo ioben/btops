@@ -3,10 +3,10 @@ package main
 import (
 	"log"
 
-	"github.com/cmschuetz/btops/config"
-	"github.com/cmschuetz/btops/handlers"
-	"github.com/cmschuetz/btops/ipc"
-	"github.com/cmschuetz/btops/monitors"
+	"github.com/ioben/btops/config"
+	"github.com/ioben/btops/handlers"
+	"github.com/ioben/btops/ipc"
+	"github.com/ioben/btops/monitors"
 )
 
 func main() {
